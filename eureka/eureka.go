@@ -1,4 +1,4 @@
-package goeureka
+package eureka
 
 import (
 	"encoding/json"
