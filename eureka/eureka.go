@@ -173,6 +173,7 @@ func (r *Registry) buildBody(state string) *RequestBody {
 		log.Println(fmt.Errorf("Can't get external IP address. Using 127.0.0.1 as default. %v", err))
 		ipAddr = "127.0.0.1"
 	}
+	hostname = ipAddr // force hostname = ipAddr
 
 	portInfo := PortInfo{r.Port, "true"}
 	securePortInfo := PortInfo{"443", "false"}
@@ -186,7 +187,7 @@ func (r *Registry) buildBody(state string) *RequestBody {
 
 	return &RequestBody{
 		Instance: InstanceDetails{
-			HostName:         ipAddr,
+			HostName:         hostname,
 			App:              r.AppName,
 			VipAddress:       vipAddress,
 			SecureVipAddress: secureVipAddress,
