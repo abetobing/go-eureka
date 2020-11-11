@@ -1,4 +1,4 @@
-module github.com/abetobing/eureka
+module github.com/abetobing/go-eureka
 
 go 1.14
 
