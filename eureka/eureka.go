@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abetobing/goeureka/utility"
+	"github.com/abetobing/go-eureka/utility"
 	"github.com/google/uuid"
 )
 
