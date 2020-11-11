@@ -175,23 +175,30 @@ func (r *Registry) buildBody(state string) *RequestBody {
 	}
 
 	portInfo := PortInfo{r.Port, "true"}
+	securePortInfo := PortInfo{"443", "false"}
+	scheme := "http"
+	homePageUrl := fmt.Sprintf("%s://%s:%s/", scheme, ipAddr, r.Port)
+	healthCheckUrl := fmt.Sprintf("%shealth", homePageUrl)
+	statusPageUrl := fmt.Sprintf("%sinfo", homePageUrl)
+	vipAddress := strings.ToLower(r.AppName)
+	secureVipAddress := strings.ToLower(r.AppName)
 	dataCenterInfo := DataCenterInfo{"com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo", "MyOwn"}
 
 	return &RequestBody{
 		Instance: InstanceDetails{
-			HostName: hostname,
-			App:      r.AppName,
-			// VipAddress       :
-			// SecureVipAddress :
-			IpAddr:     ipAddr,
-			InstanceId: r.InstanceId,
-			Status:     state,
-			Port:       portInfo,
-			// SecurePort       :
-			// HealthCheckUrl   : string         `json:"healthCheckUrl"`,
-			// StatusPageUrl    : string         `json:"statusPageUrl"`,
-			// HomePageUrl      : string         `json:"homePageUrl"`,
-			DataCenterInfo: dataCenterInfo,
+			HostName:         hostname,
+			App:              r.AppName,
+			VipAddress:       vipAddress,
+			SecureVipAddress: secureVipAddress,
+			IpAddr:           ipAddr,
+			InstanceId:       r.InstanceId,
+			Status:           state,
+			Port:             portInfo,
+			SecurePort:       securePortInfo,
+			HomePageUrl:      homePageUrl,
+			HealthCheckUrl:   healthCheckUrl,
+			StatusPageUrl:    statusPageUrl,
+			DataCenterInfo:   dataCenterInfo,
 		},
 	}
 }
