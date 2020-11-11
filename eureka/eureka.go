@@ -186,7 +186,7 @@ func (r *Registry) buildBody(state string) *RequestBody {
 
 	return &RequestBody{
 		Instance: InstanceDetails{
-			HostName:         hostname,
+			HostName:         ipAddr,
 			App:              r.AppName,
 			VipAddress:       vipAddress,
 			SecureVipAddress: secureVipAddress,
