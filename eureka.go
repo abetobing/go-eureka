@@ -1,4 +1,4 @@
-package eureka
+package goeureka
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abetobing/go-eureka/utility"
+	"github.com/abetobing/goeureka/utility"
 	"github.com/google/uuid"
 )
 
