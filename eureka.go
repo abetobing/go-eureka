@@ -1,4 +1,4 @@
-package eureka
+package main
 
 import (
 	"encoding/json"
