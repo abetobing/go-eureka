@@ -92,6 +92,7 @@ func (r *Registry) Register() {
 	json, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Println(fmt.Errorf("Cannot marshal instance body. %v", err))
+		return
 	}
 
 	payload := strings.NewReader(string(json))
@@ -112,6 +113,7 @@ func (r *Registry) Up() {
 	json, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Println(fmt.Errorf("Cannot marshal instance body. %v", err))
+		return
 	}
 
 	payload := strings.NewReader(string(json))
@@ -132,6 +134,10 @@ func (r *Registry) SendHeartbeat() {
 	url := fmt.Sprintf("%s/apps/%s/%s", r.DefaultZone, r.AppName, r.InstanceId)
 
 	resp, err := r.putRequest(url)
+	if err != nil {
+		log.Println(fmt.Errorf("Can't send heartbeat to eureka. Possibly down, out of reach, network issue."))
+		return
+	}
 
 	if resp.StatusCode == 204 || resp.StatusCode == 200 {
 		log.Println("Heartbeat to Eureka [OK]")
@@ -146,6 +152,7 @@ func (r *Registry) Down() {
 	json, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Println(fmt.Errorf("Cannot marshal instance body. %v", err))
+		return
 	}
 
 	payload := strings.NewReader(string(json))
