@@ -147,6 +147,7 @@ func (r *Registry) SendHeartbeat() {
 	resp, err := r.putRequest(url)
 	if err != nil {
 		log.Println(fmt.Errorf("Can't send heartbeat to eureka. Possibly down, out of reach, network issue."))
+		rto <- true
 		return
 	}
 
