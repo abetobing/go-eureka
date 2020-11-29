@@ -54,6 +54,10 @@ type Registry struct {
 var quit chan os.Signal = make(chan os.Signal, 1)
 var rto chan bool = make(chan bool)
 
+const (
+	RETRY_SECONDS = time.Second * 10
+)
+
 func NewEureka(eurekaServerUrl, appname, port, username, password string) *Registry {
 	r := new(Registry)
 	r.DefaultZone = eurekaServerUrl
@@ -78,12 +82,6 @@ func (r *Registry) StartHeartbeatDaemon() {
 			select {
 			case <-ticker.C:
 				r.SendHeartbeat()
-			case <-rto:
-				log.Println("Possibly cannot reach eureka server. Is the server down?")
-				log.Printf("Retrying to connect... %s \n", r.DefaultZone)
-				r.Down()
-				r.Register()
-				return
 			case <-quit:
 				ticker.Stop()
 				r.Down()
@@ -98,7 +96,7 @@ func (r *Registry) StartHeartbeatDaemon() {
 
 func (r *Registry) Register() {
 	requestBody := r.buildBody("STARTING")
-	log.Printf("Registering to %s to [%s:%s]", r.AppName, r.DefaultZone, r.Port)
+	log.Printf("Registering to %s to [%s:%s]\n", r.AppName, r.DefaultZone, r.Port)
 	json, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Println(fmt.Errorf("Cannot marshal instance body. %v", err))
@@ -110,11 +108,20 @@ func (r *Registry) Register() {
 
 	resp, err := r.postRequest(url, payload)
 
+	if err != nil {
+		log.Printf("Error registering. %v\n", err)
+		time.Sleep(RETRY_SECONDS)
+		r.Register()
+		return
+	}
+
 	if resp.StatusCode == 204 || resp.StatusCode == 200 {
 		log.Println("Successfully registered to Eureka")
 		r.Up()
 	} else {
 		log.Println(fmt.Errorf("Registration FAILED with status %v. %v", resp.Status, err))
+		time.Sleep(RETRY_SECONDS)
+		r.Register()
 	}
 }
 
@@ -130,13 +137,21 @@ func (r *Registry) Up() {
 	url := fmt.Sprintf("%s/apps/%s", r.DefaultZone, r.AppName)
 
 	resp, err := r.postRequest(url, payload)
+	if err != nil {
+		log.Printf("Error sending UP status. %v\n", err)
+		time.Sleep(RETRY_SECONDS)
+		r.Register()
+		return
+	}
 
 	if resp.StatusCode == 204 || resp.StatusCode == 200 {
 		log.Println("Successfully update status 'UP' to Eureka")
 		r.StartHeartbeatDaemon()
 	} else {
 		log.Println(fmt.Errorf("Registration FAILED with status %v. %v", resp.Status, err))
-		rto <- true
+		time.Sleep(RETRY_SECONDS)
+		r.Register()
+		r.Register()
 	}
 }
 
@@ -147,7 +162,8 @@ func (r *Registry) SendHeartbeat() {
 	resp, err := r.putRequest(url)
 	if err != nil {
 		log.Println(fmt.Errorf("Can't send heartbeat to eureka. Possibly down, out of reach, network issue."))
-		rto <- true
+		time.Sleep(RETRY_SECONDS)
+		r.Register()
 		return
 	}
 
@@ -155,7 +171,8 @@ func (r *Registry) SendHeartbeat() {
 		log.Println("Heartbeat to Eureka [OK]")
 	} else {
 		log.Println(fmt.Errorf("Heartbeat to Eureka [FAILED] with status %v. %v", resp.Status, err))
-		rto <- true
+		time.Sleep(RETRY_SECONDS)
+		r.Register()
 	}
 
 }
@@ -172,10 +189,13 @@ func (r *Registry) Down() {
 	url := fmt.Sprintf("%s/apps/%s", r.DefaultZone, r.AppName)
 
 	resp, err := r.postRequest(url, payload)
+	if err != nil {
+		log.Printf("Error sending DOWN status. %v\n", err)
+		return
+	}
 
 	if resp.StatusCode == 204 || resp.StatusCode == 200 {
 		log.Println("Successfully update status 'DOWN' to Eureka")
-		r.StartHeartbeatDaemon()
 	} else {
 		log.Println(fmt.Errorf("Updating state FAILED with status %v. %v", resp.Status, err))
 	}
