@@ -51,6 +51,9 @@ type Registry struct {
 	InstanceId  string
 }
 
+var quit chan os.Signal = make(chan os.Signal, 1)
+var rto chan bool = make(chan bool)
+
 func NewEureka(eurekaServerUrl, appname, port, username, password string) *Registry {
 	r := new(Registry)
 	r.DefaultZone = eurekaServerUrl
@@ -68,13 +71,19 @@ func NewEureka(eurekaServerUrl, appname, port, username, password string) *Regis
 
 func (r *Registry) StartHeartbeatDaemon() {
 	ticker := time.NewTicker(10 * time.Second)
-	quit := make(chan os.Signal, 1)
+	// quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
 				r.SendHeartbeat()
+			case <-rto:
+				log.Println("Possibly cannot reach eureka server. Is the server down?")
+				log.Printf("Retrying to connect... %s \n", r.DefaultZone)
+				r.Down()
+				r.Register()
+				return
 			case <-quit:
 				ticker.Stop()
 				r.Down()
@@ -126,6 +135,7 @@ func (r *Registry) Up() {
 		r.StartHeartbeatDaemon()
 	} else {
 		log.Println(fmt.Errorf("Registration FAILED with status %v. %v", resp.Status, err))
+		rto <- true
 	}
 }
 
@@ -143,6 +153,7 @@ func (r *Registry) SendHeartbeat() {
 		log.Println("Heartbeat to Eureka [OK]")
 	} else {
 		log.Println(fmt.Errorf("Heartbeat to Eureka [FAILED] with status %v. %v", resp.Status, err))
+		rto <- true
 	}
 
 }
