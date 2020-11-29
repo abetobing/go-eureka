@@ -98,6 +98,7 @@ func (r *Registry) StartHeartbeatDaemon() {
 
 func (r *Registry) Register() {
 	requestBody := r.buildBody("STARTING")
+	log.Printf("Registering to %s to [%s:%s]", r.AppName, r.DefaultZone, r.Port)
 	json, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Println(fmt.Errorf("Cannot marshal instance body. %v", err))
