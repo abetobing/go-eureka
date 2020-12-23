@@ -20,7 +20,11 @@ import (
 )
 
 func main() {
-    eur := eureka.NewEureka("http://eureka.server:8761/eureka", "My_APP_Name", "8080", "EurekaAdmin", "EurekaPassword")
+    eur := eureka.NewEureka("http://eureka.server:8761/eureka", "My_APP_Name", &eureka.InitOptions{
+		Port: "8080",
+		Username: "eurekauser",
+		Password: "eurekapassword",
+	})
 	eur.Register()
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
