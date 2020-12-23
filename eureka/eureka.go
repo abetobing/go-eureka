@@ -51,6 +51,13 @@ type Registry struct {
 	InstanceId  string
 }
 
+type InitOptions struct {
+	Port     string
+	Username string
+	Password string
+	Verbose  bool
+}
+
 var quit chan os.Signal = make(chan os.Signal, 1)
 var rto chan bool = make(chan bool)
 
@@ -58,13 +65,30 @@ const (
 	RETRY_SECONDS = time.Second * 10
 )
 
-func NewEureka(eurekaServerUrl, appname, port, username, password string) *Registry {
+var opt *InitOptions = &InitOptions{
+	Port:     "8080",
+	Username: "",
+	Password: "",
+	Verbose:  false,
+}
+
+func NewEureka(eurekaServerUrl, appname string, initOpt *InitOptions) *Registry {
+	opt = initOpt
 	r := new(Registry)
 	r.DefaultZone = eurekaServerUrl
-	r.Username = username
-	r.Password = password
+	if opt != nil {
+		if opt.Port != "" {
+			r.Port = opt.Port
+		}
+		if opt.Username != "" {
+			r.Username = opt.Username
+		}
+		if opt.Password != "" {
+			r.Password = opt.Password
+		}
+	}
 	r.AppName = appname
-	r.Port = port
+	r.Port = opt.Port
 	instanceId, err := uuid.NewUUID()
 	if err != nil {
 		log.Fatalln(fmt.Errorf("Failed generating instance id to be registered to Eureka. %v", err))
@@ -168,7 +192,9 @@ func (r *Registry) SendHeartbeat() {
 	}
 
 	if resp.StatusCode == 204 || resp.StatusCode == 200 {
-		log.Println("Heartbeat to Eureka [OK]")
+		if opt.Verbose {
+			log.Println("Heartbeat to Eureka [OK]")
+		}
 	} else {
 		log.Println(fmt.Errorf("Heartbeat to Eureka [FAILED] with status %v. %v", resp.Status, err))
 		time.Sleep(RETRY_SECONDS)
